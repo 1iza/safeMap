@@ -26,7 +26,7 @@ func (x *getStruct) Key() interface{}   { return x.key }
 func (x *getStruct) Value() interface{} { return x.value }
 func (x *getStruct) Op() SAFEMAP_OP     { return x.op }
 
-type SafeMap struct {
+type safeMap struct {
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 	ch         chan base
@@ -34,7 +34,7 @@ type SafeMap struct {
 	mapType    reflect.Type
 }
 
-func NewSafeMap(c context.Context, target interface{}) (*SafeMap, error) {
+func NewSafeMap(c context.Context, target interface{}) (*safeMap, error) {
 	ctx, cancelfunc := context.WithCancel(c)
 	mapType := reflect.TypeOf(target)
 	if mapType.Kind() != reflect.Map {
@@ -96,7 +96,7 @@ func NewSafeMap(c context.Context, target interface{}) (*SafeMap, error) {
 			}
 		}
 	}()
-	return &SafeMap{
+	return &safeMap{
 		ch:         ch,
 		ctx:        ctx,
 		cancelFunc: cancelfunc,
@@ -105,11 +105,11 @@ func NewSafeMap(c context.Context, target interface{}) (*SafeMap, error) {
 	}, nil
 }
 
-func (m *SafeMap) Close() {
+func (m *safeMap) Close() {
 	m.cancelFunc()
 }
 
-func (m *SafeMap) Set(key interface{}, value interface{}) (err error) {
+func (m *safeMap) Set(key interface{}, value interface{}) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = e.(error)
@@ -120,7 +120,7 @@ func (m *SafeMap) Set(key interface{}, value interface{}) (err error) {
 	return
 }
 
-func (m *SafeMap) Del(key interface{}) (err error) {
+func (m *safeMap) Del(key interface{}) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = e.(error)
@@ -131,7 +131,7 @@ func (m *SafeMap) Del(key interface{}) (err error) {
 	return
 }
 
-func (m *SafeMap) Clear() (err error) {
+func (m *safeMap) Clear() (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = e.(error)
@@ -142,7 +142,7 @@ func (m *SafeMap) Clear() (err error) {
 	return
 }
 
-func (m *SafeMap) Get(key interface{}) (val interface{}, err error) {
+func (m *safeMap) Get(key interface{}) (val interface{}, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = e.(error)
