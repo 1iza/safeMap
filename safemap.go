@@ -20,70 +20,69 @@ func NewSafeMap(c context.Context, target interface{}) (*safeMap, error) {
 	if mapType.Kind() != reflect.Map {
 		return nil, errors.New("not a map")
 	}
-	ch := make(chan base)
-	reflectmap := reflect.MakeMap(mapType)
-	go func() {
-		for {
-		loop:
-			select {
-			case <-ctx.Done():
-				close(ch)
-				return
-			case b, ok := <-ch:
-				if !ok {
-					return
-				}
-				k, v, op := b.Key(), b.Value(), b.Op()
-				keyVal := reflect.ValueOf(k)
-				//get value
-				switch op {
-				case SAFEMAP_GET:
-					var empty interface{}
-					//map的key类型，跟get的key类型判断
-					if mapType.Key() != reflect.TypeOf(k) {
-						v.(chan interface{}) <- empty
-						goto loop
-					}
-					val := reflectmap.MapIndex(keyVal)
-					//是否为空
-					if !val.IsValid() {
-						v.(chan interface{}) <- empty
-						goto loop
-					}
-					v.(chan interface{}) <- val.Interface()
-					goto loop
-				case SAFEMAP_SET:
-					valueType := reflect.TypeOf(v)
-					if mapType.Key() != reflect.TypeOf(k) || mapType.Elem() != valueType {
-						goto loop
-					}
-					valueVal := reflect.ValueOf(v)
-					reflectmap.SetMapIndex(keyVal, valueVal)
-				case SAFEMAP_DEL:
-					if mapType.Key() != reflect.TypeOf(k) {
-						goto loop
-					}
-					valueVal := reflect.ValueOf(v)
-					reflectmap.SetMapIndex(keyVal, valueVal)
-				case SAFEMAP_CLEAR:
-					for _, key := range reflectmap.MapKeys() {
-						reflectmap.SetMapIndex(key, reflect.Value{})
-					}
-				default:
-					//
-				}
-
-			}
-		}
-	}()
-
-	return &safeMap{
-		ch:         ch,
+	m := &safeMap{
+		ch:         make(chan base),
 		ctx:        ctx,
 		cancelFunc: cancelfunc,
-		reflectmap: reflectmap,
+		reflectmap: reflect.MakeMap(mapType),
 		mapType:    mapType,
-	}, nil
+	}
+	go m.eventHandler()
+	return m, nil
+}
+
+func (m *safeMap) eventHandler() {
+	for {
+	loop:
+		select {
+		case <-m.ctx.Done():
+			close(m.ch)
+			return
+		case b, ok := <-m.ch:
+			if !ok {
+				return
+			}
+			k, v, op := b.Key(), b.Value(), b.Op()
+			keyVal := reflect.ValueOf(k)
+			//get value
+			switch op {
+			case SAFEMAP_GET:
+				var empty interface{}
+				//map的key类型，跟get的key类型判断
+				if m.mapType.Key() != reflect.TypeOf(k) {
+					v.(chan interface{}) <- empty
+					goto loop
+				}
+				val := m.reflectmap.MapIndex(keyVal)
+				//是否为空
+				if !val.IsValid() {
+					v.(chan interface{}) <- empty
+					goto loop
+				}
+				v.(chan interface{}) <- val.Interface()
+				goto loop
+			case SAFEMAP_SET:
+				valueType := reflect.TypeOf(v)
+				if m.mapType.Key() != reflect.TypeOf(k) || m.mapType.Elem() != valueType {
+					goto loop
+				}
+				valueVal := reflect.ValueOf(v)
+				m.reflectmap.SetMapIndex(keyVal, valueVal)
+			case SAFEMAP_DEL:
+				if m.mapType.Key() != reflect.TypeOf(k) {
+					goto loop
+				}
+				valueVal := reflect.ValueOf(v)
+				m.reflectmap.SetMapIndex(keyVal, valueVal)
+			case SAFEMAP_CLEAR:
+				for _, key := range m.reflectmap.MapKeys() {
+					m.reflectmap.SetMapIndex(key, reflect.Value{})
+				}
+			default:
+				//
+			}
+		}
+	}
 }
 
 func (m *safeMap) Close() {
