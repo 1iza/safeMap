@@ -76,6 +76,7 @@ func NewSafeMap(c context.Context, target interface{}) (*safeMap, error) {
 			}
 		}
 	}()
+
 	return &safeMap{
 		ch:         ch,
 		ctx:        ctx,
