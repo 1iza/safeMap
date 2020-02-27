@@ -16,19 +16,23 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	err = m.Set(1, 1)
 	if err != nil {
 		fmt.Printf("set :%+v \n", err)
 	}
+
 	if v, err := m.Get(1); err != nil {
 		fmt.Printf("get err :%+v \n", err)
 	} else {
 		fmt.Printf("get :%+v \n", v.(int))
 	}
+
 	err = m.Del(1)
 	if err != nil {
 		fmt.Printf("del :%+v \n", err)
 	}
+
 	if v, err := m.Get(1); err != nil {
 		fmt.Printf("get err :%+v \n", err)
 	} else {
