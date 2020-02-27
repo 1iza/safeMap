@@ -17,8 +17,7 @@ func main() {
 		panic(err)
 	}
 
-	err = m.Set(1, 1)
-	if err != nil {
+	if err = m.Set(1, 1); err != nil {
 		fmt.Printf("set :%+v \n", err)
 	}
 
@@ -28,8 +27,7 @@ func main() {
 		fmt.Printf("get :%+v \n", v.(int))
 	}
 
-	err = m.Del(1)
-	if err != nil {
+	if err = m.Del(1); err != nil {
 		fmt.Printf("del :%+v \n", err)
 	}
 
