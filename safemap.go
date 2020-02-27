@@ -7,6 +7,7 @@ import (
 )
 
 type safeMap struct {
+	noCopy     noCopy
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 	ch         chan base
@@ -18,6 +19,7 @@ func NewSafeMap(c context.Context, target interface{}) (*safeMap, error) {
 	ctx, cancelfunc := context.WithCancel(c)
 	mapType := reflect.TypeOf(target)
 	if mapType.Kind() != reflect.Map {
+		cancelfunc()
 		return nil, errors.New("not a map")
 	}
 	m := &safeMap{
